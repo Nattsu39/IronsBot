@@ -61,6 +61,9 @@ services:
       # DB_SYNC_PATH: "seerapi-data.sqlite"
       # DB_SYNC_ON_STARTUP: "true"
 
+      # === 机器人配置（必填） ===
+      ONEBOT_ACCESS_TOKEN: "你的OneBot token" # 设置OneBot的访问令牌，用于NapCat连接机器人，注意不要泄露给他人
+
       # --- 机器人配置（以下均为默认值，按需修改） ---
       # HOST: "0.0.0.0"
       # PORT: "8080"                  # 修改后需同步更新上方 ports 映射
@@ -103,13 +106,13 @@ docker compose logs -f
 
 #### 4. 初始化 NapCat
 
-两个容器处于同一 Compose 网络中，可以通过服务名互相访问。在 NapCat 的配置中，将反向 WebSocket 地址设置为：
+在启动 NapCat 后，在 NapCat 容器日志中找到NapCat的登录token，并访问 `http://[你的服务器ip]:6099/webui`，输入token并登录机器人的QQ号。
 
+在 NapCat 的`网络配置`中，新建一个`WebSocket 客户端`，将`URL`设置为：
 ```
 ws://ironsbot:8080/onebot/v11/ws
 ```
-
-> `ironsbot` 是 `docker-compose.yml` 中定义的服务名，Compose 会自动将其解析为对应容器的内部 IP。
+并设置名称，token一栏填写之前设置的OneBot token，最后点击`保存`并启用即可。
 
 ### 在 Windows 上部署
 待补充
