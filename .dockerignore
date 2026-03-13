@@ -1,6 +1,6 @@
 # ----- Project -----
 
-.env
+# .env
 .env.*
 .dockerignore
 Dockerfile

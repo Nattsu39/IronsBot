@@ -42,10 +42,8 @@ mkdir -p ~/ironsbot && cd ~/ironsbot
 version: "3"
 
 services:
-  nonebot:
+  ironsbot:
     image: ghcr.io/nattsu39/ironsbot:latest
-    ports:
-      - "8080:8080"
     environment:
       # === 表情包插件必填配置，当缺少时相关命令将被禁用 ===
       MEMES_CNB_TOKEN: "你的CNB令牌"
@@ -53,11 +51,12 @@ services:
       # === 表情包插件可选配置 ===
       # MEMES_CNB_REPO: "Nattsu39/tudou"
       
-      # === 赛尔号数据查询插件可选配置 ===
-      # DATABASE_URL: "sqlite:///seerapi-data.sqlite"
+      # === 赛尔号数据查询插件必填配置 ===
+      DATABASE_URL: "sqlite:///seerapi-data.sqlite"
 
+      # === db_sync 插件必填配置 ===
+      DB_SYNC_URL: "https://github.com/SeerAPI/api-data/releases/download/latest/seerapi-data.sqlite"
       # === db_sync 插件可选配置 ===
-      # DB_SYNC_URL: "https://github.com/SeerAPI/api-data/releases/download/latest/seerapi-data.sqlite"
       # DB_SYNC_INTERVAL_MINUTES: "60"
       # DB_SYNC_PATH: "seerapi-data.sqlite"
       # DB_SYNC_ON_STARTUP: "true"
@@ -74,16 +73,15 @@ services:
     image: mlikiowa/napcat-docker:latest
     container_name: napcat
     restart: always
-    mac_address: 02:42:ac:11:00:02
+    mac_address: 02:42:ac:11:00:02 # 自行设置
 
     environment:
       - NAPCAT_UID=${NAPCAT_UID}
       - NAPCAT_GID=${NAPCAT_GID}
     
     ports:
-      - 3001:3001
       - 6099:6099
-    
+
     volumes:
       - ./napcat/config:/app/napcat/config
       - ./ntqq:/app/.config/QQ
@@ -103,15 +101,15 @@ docker compose up -d
 docker compose logs -f
 ```
 
-#### 4. 连接 OneBot 实现端
+#### 4. 初始化 NapCat
 
 两个容器处于同一 Compose 网络中，可以通过服务名互相访问。在 NapCat 的配置中，将反向 WebSocket 地址设置为：
 
 ```
-ws://nonebot:8080/onebot/v11/ws
+ws://ironsbot:8080/onebot/v11/ws
 ```
 
-> `nonebot` 是 `docker-compose.yml` 中定义的服务名，Compose 会自动将其解析为对应容器的内部 IP。
+> `ironsbot` 是 `docker-compose.yml` 中定义的服务名，Compose 会自动将其解析为对应容器的内部 IP。
 
 ### 在 Windows 上部署
 待补充
