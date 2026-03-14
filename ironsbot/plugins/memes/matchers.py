@@ -110,10 +110,7 @@ if plugin_config.memes_cnb_token and plugin_config.memes_cnb_repo:
             max_index=2185,
             image_path_template="tudou/{index}.gif",
             message_template=MessageTemplate(
-                "{random_text}{command}（{index}/{total}）\n"
-                "🌈发【{command}x】直接出x号{command}，不加数字默认随机发送\n"
-                "{image}\n"
-                "图片收集自 @火火"
+                DEFAULT_MESSAGE_TEMPLATE.template + "\n图片收集自 @火火"
             ),
         )
     )
@@ -125,6 +122,18 @@ if plugin_config.memes_cnb_token and plugin_config.memes_cnb_repo:
             max_index=166,
             image_path_template="pig/{index}.jpg",
             message_template=DEFAULT_MESSAGE_TEMPLATE,
+        )
+    )
+    COMMANDS.append(
+        ImageCommandConfig(
+            type="capoo",
+            command="咖波",
+            aliases={"今日咖波", "随机咖波", "capoo", "猫猫虫"},
+            max_index=873,
+            image_path_template="capoo/{index}.gif",
+            message_template=MessageTemplate(
+                DEFAULT_MESSAGE_TEMPLATE.template + "\n图片收集自 @聿聿"
+            ),
         )
     )
 
