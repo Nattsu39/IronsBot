@@ -2,12 +2,10 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any, Generic, TypeVar, cast, overload
 
-from nonebot.adapters import Message
-from nonebot.adapters.onebot.v11 import Message as OneBotV11Message
-from nonebot.adapters.onebot.v11 import MessageSegment as OneBotV11MessageSegment
 from nonebot.exception import FinishedException
 from nonebot.matcher import Matcher
 from nonebot.typing import T_State
+from nonebot_plugin_saa import MessageFactory
 from sqlmodel import SQLModel
 from typing_extensions import NamedTuple
 
@@ -52,11 +50,9 @@ class Prompt(Generic[T]):
         except IndexError:
             return None
 
-    def build_message(self) -> Message:
-        msg = OneBotV11Message()
+    def build_message(self) -> MessageFactory:
+        msg = MessageFactory()
         msg += self.title
-        if self.at_user_id:
-            msg += OneBotV11MessageSegment.at(self.at_user_id)
         for index, item in enumerate(self.items, start=1):
             msg += f"{index}. {item.name}（{item.desc}）\n"
         msg += "0. 退出"
@@ -122,7 +118,7 @@ def create_prompt_got_handler(
 
 def simple_prompt_resolver(
     data_getter: GetData[_M],
-    message_builder: Callable[[_M], Awaitable[Message]],
+    message_builder: Callable[[_M], Awaitable[MessageFactory]],
     entity_name: str,
 ) -> Callable[..., Awaitable[None]]:
     """为 ``create_prompt_got_handler`` 创建简单的解析回调。
@@ -150,6 +146,7 @@ def simple_prompt_resolver(
             await matcher.finish(
                 f"❌未找到{entity_name} {item.value}（这是一个bug，请反馈给开发者）"
             )
-        await matcher.finish(await message_builder(obj))
+        msg = await message_builder(obj)
+        await msg.finish()
 
     return _resolver

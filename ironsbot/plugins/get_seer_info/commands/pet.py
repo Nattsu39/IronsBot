@@ -1,9 +1,8 @@
-from nonebot.adapters import Message, MessageTemplate
-from nonebot.adapters.onebot.v11 import Message as OneBotV11Message
-from nonebot.adapters.onebot.v11 import MessageSegment as OneBotV11MessageSegment
+from nonebot.adapters import Bot, MessageTemplate
 from nonebot.exception import FinishedException
 from nonebot.matcher import Matcher
 from nonebot.typing import T_State
+from nonebot_plugin_saa import Image, MessageFactory
 from seerapi_models import PetORM, PetSkinORM
 
 from ironsbot.plugins.get_seer_info.group import matcher_group
@@ -31,6 +30,7 @@ PROMPT_MAX_ITEMS = 20
 async def handle_pet_image(
     matcher: Matcher,
     state: T_State,
+    bot: Bot,
     pets: list[PetORM] = GetPetData(),
     skins: list[PetSkinORM] = GetPetSkinData(),
 ) -> None:
@@ -49,30 +49,31 @@ async def handle_pet_image(
         raise FinishedException
 
     if len(items) == 1:
-        await matcher.finish(await build_pet_image_message(items[0]))
+        msg = await build_pet_image_message(items[0])
+        await msg.finish()
 
     if len(pets) > PROMPT_MAX_ITEMS:
         await matcher.finish(f"重名超过{PROMPT_MAX_ITEMS}个，请重新检索关键词！")
 
-    state[PROMPT_STATE_KEY] = Prompt(
+    prompt = Prompt(
         title="请问你想查询的立绘是……",
         items=items,
     )
-    state["prompt_message"] = state[PROMPT_STATE_KEY].build_message()
+    state[PROMPT_STATE_KEY] = prompt
+    state["prompt_message"] = await prompt.build_message().build(bot)
 
 
-async def build_pet_image_message(args: PromptItem[int]) -> Message:
+async def build_pet_image_message(args: PromptItem[int]) -> MessageFactory:
     image = await PetBodyImageGetter.get(str(args.value))
-    msg = OneBotV11Message()
+    msg = MessageFactory()
     msg += f"💎{args.name}\n"
     msg += image
     return msg
 
 
-async def pet_image_resolver(
-    item: PromptItem[int], matcher: Matcher, _: object
-) -> None:
-    await matcher.finish(await build_pet_image_message(item))
+async def pet_image_resolver(item: PromptItem[int], _1: Matcher, _2: object) -> None:
+    msg = await build_pet_image_message(item)
+    await msg.finish()
 
 
 PET_IMAGE_GOT_KEY = "pet_image"
@@ -92,6 +93,7 @@ pet_info_matcher = matcher_group.on_message(
 async def handle_pet_info(
     matcher: Matcher,
     state: T_State,
+    bot: Bot,
     pets: list[PetORM] = GetPetData(),
     # aliases: list[PetORM] = GetPetData(),
 ) -> None:
@@ -99,24 +101,26 @@ async def handle_pet_info(
         raise FinishedException
 
     if len(pets) == 1:
-        await matcher.finish(await build_pet_info_message(pets[0]))
+        msg = await build_pet_info_message(pets[0])
+        await msg.finish()
 
     if len(pets) > PROMPT_MAX_ITEMS:
         await matcher.finish(f"重名超过{PROMPT_MAX_ITEMS}个，请重新检索关键词！")
 
-    state[PROMPT_STATE_KEY] = Prompt(
+    prompt = Prompt(
         title="请问你想查询的精灵是……",
         items=[
             PromptItem(name=pet.name, desc=str(pet.id), value=pet.id) for pet in pets
         ],
     )
-    state["prompt_message"] = state[PROMPT_STATE_KEY].build_message()
+    state[PROMPT_STATE_KEY] = prompt
+    state["prompt_message"] = await prompt.build_message().build(bot)
 
 
-async def build_pet_info_message(pet: PetORM) -> Message:
+async def build_pet_info_message(pet: PetORM) -> MessageFactory:
     pic_bytes = await render_pet_info(pet)
-    msg = OneBotV11Message()
-    msg += OneBotV11MessageSegment.image(pic_bytes)
+    msg = MessageFactory()
+    msg += Image(pic_bytes)
     return msg
 
 

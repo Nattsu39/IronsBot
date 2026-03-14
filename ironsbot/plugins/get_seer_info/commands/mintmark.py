@@ -1,9 +1,8 @@
-from nonebot.adapters import Message, MessageTemplate
-from nonebot.adapters.onebot.v11 import Message as OneBotV11Message
+from nonebot.adapters import Bot, MessageTemplate
 from nonebot.exception import FinishedException
 from nonebot.matcher import Matcher
-from nonebot.rule import startswith
 from nonebot.typing import T_State
+from nonebot_plugin_saa import MessageFactory
 from seerapi_models import MintmarkClassCategoryORM, MintmarkORM
 from seerapi_models.mintmark import AbilityPartORM, UniversalPartORM
 
@@ -31,8 +30,6 @@ mintmark_matcher = matcher_group.on_message(
 
 PROMPT_MAX_ITEMS = 20
 
-rule = startswith(("!", "/"), ignorecase=False)
-
 
 def _deduplicate(mintmarks: list[MintmarkORM]) -> list[MintmarkORM]:
     seen_ids = set()
@@ -48,6 +45,7 @@ def _deduplicate(mintmarks: list[MintmarkORM]) -> list[MintmarkORM]:
 async def handle_mintmark(
     matcher: Matcher,
     state: T_State,
+    bot: Bot,
     mintmarks: list[MintmarkORM] = GetMintmarkData(),
     classes: list[MintmarkClassCategoryORM] = GetMintmarkClassData(),
 ) -> None:
@@ -58,18 +56,21 @@ async def handle_mintmark(
         raise FinishedException
 
     if len(mintmarks) == 1:
-        await matcher.finish(await build_mintmark_message(mintmarks[0]))
+        msg = await build_mintmark_message(mintmarks[0])
+        await msg.finish()
+
     elif len(mintmarks) > PROMPT_MAX_ITEMS:
         await matcher.finish(f"重名超过{PROMPT_MAX_ITEMS}个，请重新检索关键词！")
 
-    state[PROMPT_STATE_KEY] = Prompt(
+    prompt = Prompt(
         title="请问你想查询的刻印是……",
         items=[
             PromptItem(name=mintmark.name, desc=str(mintmark.id), value=mintmark.id)
             for mintmark in mintmarks
         ],
     )
-    state["prompt_message"] = state[PROMPT_STATE_KEY].build_message()
+    state[PROMPT_STATE_KEY] = prompt
+    state["prompt_message"] = await prompt.build_message().build(bot)
 
 
 def _fmt_attr(label: str, value: float, col_width: int = 8) -> str:
@@ -79,8 +80,8 @@ def _fmt_attr(label: str, value: float, col_width: int = 8) -> str:
     return text + "\u2007" * max(col_width - display_len, 1)
 
 
-async def build_mintmark_message(mintmark: MintmarkORM) -> Message:
-    msg = OneBotV11Message()
+async def build_mintmark_message(mintmark: MintmarkORM) -> MessageFactory:
+    msg = MessageFactory()
     part = mintmark.ability_part or mintmark.skill_part or mintmark.universal_part
     msg += f"【{mintmark.name}】\n"
     image = await MintmarkBodyImageGetter.get(str(mintmark.id))
