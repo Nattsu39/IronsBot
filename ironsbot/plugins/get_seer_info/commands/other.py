@@ -1,7 +1,7 @@
 from datetime import timedelta, timezone
 from typing import NoReturn
 
-from nonebot.adapters import MessageTemplate
+from nonebot.adapters import Bot, MessageTemplate
 from nonebot.matcher import Matcher
 from seerapi_models import ApiMetadataORM
 from sqlmodel import select
@@ -20,9 +20,9 @@ PREVIEW_MESSAGE_TEMPLATE = MessageTemplate(
 
 
 @preview_matcher.handle()
-async def handle_preview(matcher: Matcher) -> NoReturn:
+async def handle_preview(matcher: Matcher, bot: Bot) -> NoReturn:
     image = await PreviewImageGetter.get("")
-    await matcher.finish(PREVIEW_MESSAGE_TEMPLATE.format(image=image))
+    await matcher.finish(PREVIEW_MESSAGE_TEMPLATE.format(image=await image.build(bot)))
 
 
 data_version_matcher = matcher_group.on_fullmatch("数据版本", rule=no_reply())
